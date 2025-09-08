@@ -237,7 +237,6 @@ def importar_fixowidth_para_detraf(caminho: str, layout_path: str, periodo: str 
             )
             batch.append(row)
 
-            # Flush por tamanho
             if len(batch) >= BATCH_SIZE:
                 cur.executemany(_SQL_INSERT, batch)
                 # Contabiliza pelo que enviamos (independe de rowcount)
