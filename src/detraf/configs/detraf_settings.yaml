@@ -1,0 +1,11 @@
+detraf:
+  periodo: '202505'
+  eot: '010'
+  arquivo: /Detraf.txt
+  layout_path: /home/saperx/Documentos/Analise_detraf_alcans/detraf-batimento-v2/src/detraf/configs/detraf_layout.yaml
+db:
+  host: localhost
+  port: 3306
+  user: spx
+  password: Spx@2024!
+  database: spx_o

@@ -1,0 +1,26 @@
+fields:
+  - { name: sequencial,            start: 1,  length: 10 }
+  - { name: assinante_a,           start: 11, length: 21 }
+  - { name: eot_de_a,              start: 32, length: 3 }
+  - { name: cnl_de_a,              start: 35, length: 5 }
+  - { name: area_local_de_a,       start: 40, length: 4 }
+  - { name: data_da_chamada,       start: 44, length: 8 }
+  - { name: hora_de_atendimento,   start: 52, length: 6 }
+  - { name: assinante_b,           start: 58, length: 20 }
+  - { name: eot_de_b,              start: 78, length: 3 }
+  - { name: cnl_de_b,              start: 81, length: 5 }
+  - { name: area_local_de_b,       start: 86, length: 4 }
+  - { name: data_de_termino,       start: 90, length: 8 }
+  - { name: hora_de_termino,       start: 98, length: 6 }
+  - { name: classe,                start: 104, length: 5 }
+  - { name: condicao_de_entrada,   start: 109, length: 2 }
+  - { name: condicao_de_saida,     start: 111, length: 2 }
+  - { name: categoria_de_a,        start: 113, length: 2 }
+  - { name: povpi,                 start: 115, length: 7 }
+  - { name: grupo_horario,         start: 122, length: 1 }
+  - { name: chave_portabilidade,   start: 123, length: 12 }
+  - { name: duracao_real_da_chamada,     start: 135, length: 6 }   # HHHMMSS
+  - { name: duracao_minima_remunerada,   start: 141, length: 10 }  # ex.: 0000000056 => 5.6
+  - { name: valor_liquido,               start: 151, length: 11 }  # ex.: 0000000000178 => 0.00178
+  - { name: eqt_filial_despesa,    start: 162, length: 3 }
+  - { name: eqt_filial_receita,    start: 165, length: 3 }

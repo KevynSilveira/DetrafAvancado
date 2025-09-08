@@ -1,0 +1,44 @@
+# detraf-batimento v2.0
+
+Analisador automático do DETRAF com CDR focado em simplicidade: **setup do banco**, **coleta de dados (período, EOT, arquivo)** e **execução**.
+
+## Instalação (modo desenvolvimento)
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e .
+```
+
+## Configuração do Banco (automática)
+```bash
+detraf setup-db
+# Será perguntado host, porta, usuário, senha e database.
+# Um arquivo .env será criado e a conexão testada.
+```
+
+## Diagnóstico rápido do Banco
+```bash
+detraf diag-db
+```
+
+## Execução da Análise (primeira etapa)
+```bash
+detraf run
+# O comando pedirá:
+# - Período de referência no formato YYYYMM (ex.: 202505)
+# - EOT da análise (ex.: 010)
+# - Caminho do arquivo DETRAF (ex.: data/Detraf.txt)
+#
+# Em seguida, será validada a conexão com o banco,
+# impressas as variáveis inseridas e iniciado o processamento.
+```
+
+> **Nota:** Esta versão foca na **etapa inicial** (setup do banco + inicializador de dados). A importação do arquivo e etapas seguintes estão estruturadas para evolução rápida.
+
+
+## Janela de cobrança por mês de referência
+Ao informar `YYYYMM` (ex.: `202505`), o sistema calcula uma **janela de 3 meses** para o lado da operadora:
+- Início: primeiro dia de (mês-2) às 00:00:00
+- Fim: último dia do mês de referência às 23:59:59
+
+Ex.: `202505` => janela `202503-01 00:00:00` até `2025-05-31 23:59:59`.
+Essa janela é usada para classificar registros do arquivo da operadora em **conferido** (encontrado no CDR) ou **perdido** (não encontrado), e servirá para etapas futuras onde verificaremos o inverso (o que deveria ser cobrado e não foi).

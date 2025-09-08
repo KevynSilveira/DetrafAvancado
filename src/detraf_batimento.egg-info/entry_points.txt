@@ -1,0 +1,2 @@
+[console_scripts]
+detraf = detraf.cli:app
