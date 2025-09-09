@@ -1,13 +1,16 @@
 from __future__ import annotations
 import time
 import pymysql
-from .db import get_conn_params, load_env
-from .log import header, info, ok, warn, err
+from .db import get_conn_params
+from .env import load_env
+from .log import info, ok, warn, err
+from .normalizer import criar_tmp_cdr, criar_tmp_detraf
 
 def _run_id() -> str:
     return time.strftime("%Y%m%d%H%M%S")
 
-def processar_match(periodo: str) -> None:
+def processar_match() -> None:
+    """Realiza o batimento entre ``detraf`` e ``cdr`` já importados."""
     load_env()
     params = get_conn_params()
     runid = _run_id()
@@ -27,54 +30,9 @@ def processar_match(periodo: str) -> None:
             return
         info(f"Janela DETRAF detectada: {min_dt} → {max_dt} | {total_detraf} linhas")
 
-        # tmp_detraf com números normalizados curtos
-        cur.execute(f"""
-        CREATE TEMPORARY TABLE {tmp_detraf} AS
-        SELECT id, data_hora, eot_de_a, eot_de_b,
-               assinante_a_numero AS a_num,
-               assinante_b_numero AS b_num,
-               CASE
-                 WHEN CHAR_LENGTH(assinante_a_numero)=10 THEN RIGHT(assinante_a_numero,8)
-                 WHEN CHAR_LENGTH(assinante_a_numero)=11 THEN RIGHT(assinante_a_numero,9)
-                 ELSE assinante_a_numero
-               END AS a_short,
-               CASE
-                 WHEN CHAR_LENGTH(assinante_b_numero)=10 THEN RIGHT(assinante_b_numero,8)
-                 WHEN CHAR_LENGTH(assinante_b_numero)=11 THEN RIGHT(assinante_b_numero,9)
-                 ELSE assinante_b_numero
-               END AS b_short
-        FROM detraf
-        WHERE data_hora BETWEEN %s AND %s
-        """, (min_dt, max_dt))
-        ok(f"Tabela temporária criada: {tmp_detraf}")
-
-        # tmp_cdr recortado e com dígitos/short
-        cur.execute(f"""
-        CREATE TEMPORARY TABLE {tmp_cdr} AS
-        SELECT id, calldate, src, dst, EOT_A, EOT_B,
-               REGEXP_REPLACE(src, '[^0-9]', '') AS src_digits,
-               REGEXP_REPLACE(dst, '[^0-9]', '') AS dst_digits
-        FROM cdr
-        WHERE calldate BETWEEN %s AND %s
-        """, (min_dt, max_dt))
-        cur.execute(f"""
-        ALTER TABLE {tmp_cdr}
-        ADD COLUMN src_short VARCHAR(32), ADD COLUMN dst_short VARCHAR(32)
-        """)
-        cur.execute(f"""
-        UPDATE {tmp_cdr}
-        SET src_short = CASE
-                          WHEN CHAR_LENGTH(src_digits)=10 THEN RIGHT(src_digits,8)
-                          WHEN CHAR_LENGTH(src_digits)=11 THEN RIGHT(src_digits,9)
-                          ELSE src_digits
-                        END,
-            dst_short = CASE
-                          WHEN CHAR_LENGTH(dst_digits)=10 THEN RIGHT(dst_digits,8)
-                          WHEN CHAR_LENGTH(dst_digits)=11 THEN RIGHT(dst_digits,9)
-                          ELSE dst_digits
-                        END
-        """)
-        ok(f"Tabela temporária criada: {tmp_cdr}")
+        # tmp_detraf e tmp_cdr com números normalizados
+        criar_tmp_detraf(cur, tmp_detraf, min_dt, max_dt)
+        criar_tmp_cdr(cur, tmp_cdr, min_dt, max_dt)
 
         # Candidatos ±5 min e RN=1
         cur.execute(f"""
