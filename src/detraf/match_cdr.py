@@ -90,3 +90,26 @@ def processar_match() -> None:
         cur.execute(f"DROP TEMPORARY TABLE IF EXISTS {tmp_conf}")
         cur.execute(f"DROP TEMPORARY TABLE IF EXISTS {tmp_detraf}")
         ok("Temporárias descartadas.")
+
+        # View para conferência com colunas detalhadas
+        cur.execute(
+            f"""
+            CREATE OR REPLACE VIEW detraf_conferencia_vw AS
+            SELECT dc.id,
+                   dc.status,
+                   d.data_hora AS detraf_data_hora,
+                   d.assinante_a_numero AS assinante_a,
+                   d.assinante_b_numero AS assinante_b,
+                   c.calldate AS cdr_data_hora,
+                   d.eot_de_a AS detraf_eot_a,
+                   d.eot_de_b AS detraf_eot_b,
+                   NULL AS separador,
+                   c.EOT_A AS cdr_eot_a,
+                   c.EOT_B AS cdr_eot_b,
+                   dc.observacao
+            FROM detraf_conferencia dc
+            JOIN detraf d ON dc.detraf_id = d.id
+            LEFT JOIN {tmp_cdr} c ON dc.cdr_id = c.id
+            """
+        )
+        ok("View detraf_conferencia_vw atualizada.")
