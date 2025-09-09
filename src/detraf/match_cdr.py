@@ -3,7 +3,7 @@ import time
 import pymysql
 from .db import get_conn_params
 from .env import load_env
-from .log import info, ok, warn, err
+from .log import info, ok, warn
 from .normalizer import criar_tmp_cdr, criar_tmp_detraf
 
 def _run_id() -> str:
@@ -14,7 +14,7 @@ def processar_match() -> None:
     load_env()
     params = get_conn_params()
     runid = _run_id()
-    tmp_cdr = f"tmp_cdr_{runid}"
+    tmp_cdr = "cdr_normalizado"
     tmp_detraf = f"tmp_detraf_{runid}"
     tmp_conf = f"tmp_conf_{runid}"
 
@@ -30,7 +30,7 @@ def processar_match() -> None:
             return
         info(f"Janela DETRAF detectada: {min_dt} → {max_dt} | {total_detraf} linhas")
 
-        # tmp_detraf e tmp_cdr com números normalizados
+        # tmp_detraf e cdr normalizado
         criar_tmp_detraf(cur, tmp_detraf, min_dt, max_dt)
         criar_tmp_cdr(cur, tmp_cdr, min_dt, max_dt)
 
@@ -43,8 +43,8 @@ def processar_match() -> None:
                    d.eot_de_a, d.eot_de_b, c.EOT_A, c.EOT_B
             FROM {tmp_detraf} d
             JOIN {tmp_cdr} c
-              ON d.a_short = c.src_short
-             AND d.b_short = c.dst_short
+              ON d.a_num = c.src
+             AND d.b_num = c.dst
              AND ABS(TIMESTAMPDIFF(MINUTE, d.data_hora, c.calldate)) <= 5
         ),
         ranqueados AS (
@@ -86,8 +86,30 @@ def processar_match() -> None:
 
         conn.commit()
 
-        # Drop temporárias
+        # Drop temporárias auxiliares
         cur.execute(f"DROP TEMPORARY TABLE IF EXISTS {tmp_conf}")
-        cur.execute(f"DROP TEMPORARY TABLE IF EXISTS {tmp_cdr}")
         cur.execute(f"DROP TEMPORARY TABLE IF EXISTS {tmp_detraf}")
         ok("Temporárias descartadas.")
+
+        # View para conferência com colunas detalhadas
+        cur.execute(
+            f"""
+            CREATE OR REPLACE VIEW detraf_conferencia_vw AS
+            SELECT dc.id,
+                   dc.status,
+                   d.data_hora AS detraf_data_hora,
+                   d.assinante_a_numero AS assinante_a,
+                   d.assinante_b_numero AS assinante_b,
+                   c.calldate AS cdr_data_hora,
+                   d.eot_de_a AS detraf_eot_a,
+                   d.eot_de_b AS detraf_eot_b,
+                   NULL AS separador,
+                   c.EOT_A AS cdr_eot_a,
+                   c.EOT_B AS cdr_eot_b,
+                   dc.observacao
+            FROM detraf_conferencia dc
+            JOIN detraf d ON dc.detraf_id = d.id
+            LEFT JOIN {tmp_cdr} c ON dc.cdr_id = c.id
+            """
+        )
+        ok("View detraf_conferencia_vw atualizada.")
