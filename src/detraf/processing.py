@@ -135,42 +135,21 @@ def begin_processing(periodo: str, eot: str, arquivo: str) -> Tuple[str, str]:
     return dt_ini.strftime("%Y-%m-%d %H:%M:%S"), dt_fim.strftime("%Y-%m-%d %H:%M:%S")
 
 # === Pipeline: comparação/matching (mínimo seguro) ===
-def processar_match(periodo: str) -> None:
+def processar_match() -> None:
+    """Executa o batimento real delegando ao módulo ``match_cdr``.
+
+    Esta função mantém a assinatura utilizada pelo ``cli`` e simplesmente
+    encaminha a chamada para :func:`match_cdr.processar_match`. Qualquer erro
+    é capturado e exibido como aviso para não interromper o fluxo principal.
     """
-    Implementação mínima e segura:
-      - Se detraf não existir ou estiver vazia, avisa e retorna.
-      - Não cria/edita schema. Não escreve em detraf_conferencia para evitar conflito.
-    Seu importador/rotina específica pode substituir esta função depois.
-    """
+
     try:
-        conn = get_connection()
+        from .match_cdr import processar_match as _match
     except Exception as ex:
-        warn(f"Não foi possível conectar para o matching: {ex}")
+        warn(f"Módulo de matching indisponível: {ex}")
         return
 
     try:
-        with conn.cursor() as cur:
-            if not _table_exists(cur, "detraf"):
-                warn("Tabela detraf não existe. Nada a processar.")
-                return
-
-            cur.execute("SELECT COUNT(*) AS n FROM detraf")
-            row = cur.fetchone() or {"n": 0}
-            n = int(row["n"])
-            if n == 0:
-                warn("Tabela detraf vazia. Nada a processar.")
-                return
-
-            # Tentamos detectar se existe coluna data_hora (apenas para mensagem compatível)
-            cur.execute("SHOW COLUMNS FROM detraf LIKE 'data_hora'")
-            has_dh = cur.fetchone() is not None
-            if not has_dh:
-                warn("Tabela detraf sem coluna data_hora. Nada a processar.")
-                return
-
-            # Aqui entraria a lógica real de matching.
-            # Mantemos apenas um log de conclusão para não quebrar o fluxo atual.
-            ok("Matching (placeholder) finalizado sem erros.")
-
-    finally:
-        conn.close()
+        _match()
+    except Exception as ex:
+        warn(f"Falha ao executar matching: {ex}")
