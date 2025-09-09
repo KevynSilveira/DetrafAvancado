@@ -121,22 +121,14 @@ def _progress(curr: int, total: int, started_at: float, every: int = 1000) -> No
 # ----------------------------------------------------------------------
 _SQL_INSERT = """
 INSERT INTO detraf (
-    eot, sequencial, assinante_a, eot_de_a, cnl_de_a, area_local_de_a,
+    eot, sequencial, assinante_a_numero, eot_de_a, cnl_de_a, area_local_de_a,
     data_da_chamada, hora_de_atendimento,
-    assinante_b, eot_de_b, cnl_de_b, area_local_de_b,
-    classe, categoria, condicao_b, grupo_horario, povpi, a_num, b_num,
-    valor_bruto, descontos_e_encargos, valor_liquido,
-    eqt_receita, eqt_despesa, eqt_filial_receita, eqt_filial_despesa,
-    descritor_de_cdr,
+    assinante_b_numero, eot_de_b, cnl_de_b, area_local_de_b,
     data_hora
 ) VALUES (
     %s, %s, %s, %s, %s, %s,
     %s, %s,
     %s, %s, %s, %s,
-    %s, %s, %s, %s, %s, %s, %s,
-    %s, %s, %s,
-    %s, %s, %s, %s,
-    %s,
     STR_TO_DATE(CONCAT(%s, ' ', %s), '%%Y%%m%%d %%H%%i%%s')
 )
 """
@@ -183,34 +175,16 @@ def importar_fixowidth_para_detraf(caminho: str, layout_path: str, periodo: str 
             except Exception:
                 sequencial = None
 
-            assinante_a = _clean(rec.get("assinante_a", ""))
+            assinante_a_numero = _clean(rec.get("assinante_a", ""))
             eot_de_a = _clean(rec.get("eot_de_a", ""))
             cnl_de_a = _clean(rec.get("cnl_de_a", ""))
             area_local_de_a = _clean(rec.get("area_local_de_a", ""))
             data_da_chamada = _clean(rec.get("data_da_chamada", ""))
             hora_de_atendimento = _clean(rec.get("hora_de_atendimento", ""))
-            assinante_b = _clean(rec.get("assinante_b", ""))
+            assinante_b_numero = _clean(rec.get("assinante_b", ""))
             eot_de_b = _clean(rec.get("eot_de_b", ""))
             cnl_de_b = _clean(rec.get("cnl_de_b", ""))
             area_local_de_b = _clean(rec.get("area_local_de_b", ""))
-
-            classe = _clean(rec.get("classe", ""))
-            categoria = _clean(rec.get("categoria", ""))
-            condicao_b = _clean(rec.get("condicao_b", ""))
-            grupo_horario = _clean(rec.get("grupo_horario", ""))
-            povpi = _clean(rec.get("povpi", ""))
-            a_num = _clean(rec.get("a_num", ""))
-            b_num = _clean(rec.get("b_num", ""))
-
-            valor_bruto = _clean_num(rec.get("valor_bruto", ""))
-            descontos_e_encargos = _clean_num(rec.get("descontos_e_encargos", ""))
-            valor_liquido = _clean_num(rec.get("valor_liquido", ""))
-
-            eqt_receita = _clean(rec.get("eqt_receita", ""))
-            eqt_despesa = _clean(rec.get("eqt_despesa", ""))
-            eqt_filial_receita = _clean(rec.get("eqt_filial_receita", ""))
-            eqt_filial_despesa = _clean(rec.get("eqt_filial_despesa", ""))
-            descritor_de_cdr = _clean(rec.get("descritor_de_cdr", ""))
 
             # Filtro por periodo YYYYMM (data da chamada)
             if periodo:
@@ -226,13 +200,9 @@ def importar_fixowidth_para_detraf(caminho: str, layout_path: str, periodo: str 
             eot_ctx = (eot or "AUTO").strip() or "AUTO"
 
             row = (
-                eot_ctx, sequencial, assinante_a, eot_de_a, cnl_de_a, area_local_de_a,
+                eot_ctx, sequencial, assinante_a_numero, eot_de_a, cnl_de_a, area_local_de_a,
                 data_da_chamada, hora_de_atendimento,
-                assinante_b, eot_de_b, cnl_de_b, area_local_de_b,
-                classe, categoria, condicao_b, grupo_horario, povpi, a_num, b_num,
-                valor_bruto, descontos_e_encargos, valor_liquido,
-                eqt_receita, eqt_despesa, eqt_filial_receita, eqt_filial_despesa,
-                descritor_de_cdr,
+                assinante_b_numero, eot_de_b, cnl_de_b, area_local_de_b,
                 data_str, hora_str,
             )
             batch.append(row)
