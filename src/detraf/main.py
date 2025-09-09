@@ -20,4 +20,4 @@ def executar(periodo: str, eot: str, arquivo: str) -> None:
     """
     begin_processing(periodo, eot, arquivo)
     importar_arquivo_txt(arquivo, periodo, eot)
-    processar_match(periodo)
+    processar_match()

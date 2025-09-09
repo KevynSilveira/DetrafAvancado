@@ -223,7 +223,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     try:
         from .processing import processar_match  # type: ignore
         ok("Importação concluída. Prosseguindo com matching e classificação...")
-        processar_match(periodo)
+        processar_match()
         ok("Processamento completo: detraf_conferencia preenchida.")
     except Exception:
         # Se o projeto não tiver essas rotinas, apenas finalizar.

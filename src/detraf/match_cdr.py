@@ -1,14 +1,16 @@
 from __future__ import annotations
 import time
 import pymysql
-from .db import get_conn_params, load_env
+from .db import get_conn_params
+from .env import load_env
 from .log import info, ok, warn, err
 from .normalizer import criar_tmp_cdr, criar_tmp_detraf
 
 def _run_id() -> str:
     return time.strftime("%Y%m%d%H%M%S")
 
-def processar_match(periodo: str) -> None:
+def processar_match() -> None:
+    """Realiza o batimento entre ``detraf`` e ``cdr`` já importados."""
     load_env()
     params = get_conn_params()
     runid = _run_id()

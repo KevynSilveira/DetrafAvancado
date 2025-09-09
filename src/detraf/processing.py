@@ -135,12 +135,13 @@ def begin_processing(periodo: str, eot: str, arquivo: str) -> Tuple[str, str]:
     return dt_ini.strftime("%Y-%m-%d %H:%M:%S"), dt_fim.strftime("%Y-%m-%d %H:%M:%S")
 
 # === Pipeline: comparação/matching (mínimo seguro) ===
-def processar_match(periodo: str) -> None:
-    """
+def processar_match() -> None:
+    """Matching simplificado para uso após a importação.
+
     Implementação mínima e segura:
-      - Se detraf não existir ou estiver vazia, avisa e retorna.
-      - Não cria/edita schema. Não escreve em detraf_conferencia para evitar conflito.
-    Seu importador/rotina específica pode substituir esta função depois.
+      - Se ``detraf`` não existir ou estiver vazia, apenas avisa.
+      - Não altera schema nem grava em ``detraf_conferencia``.
+    Pode ser substituída por uma rotina mais completa conforme a necessidade.
     """
     try:
         conn = get_connection()
