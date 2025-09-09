@@ -9,6 +9,12 @@ def section(title: str) -> None:
     bar = "─" * (len(title) + 2)
     print(f"╭{bar}╮\n│ {title} │\n╰{bar}╯")
 
+# Compatibilidade com versões anteriores
+header = section
+
+def info(msg: str) -> None:
+    print(f"{_ts()} {msg}")
+
 def ok(msg: str) -> None:
     print(f"{_ts()} OK {msg}")
 
