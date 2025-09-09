@@ -7,7 +7,7 @@ from .log import info, ok, warn
 from .normalizer import criar_tmp_cdr, criar_tmp_detraf
 
 def _run_id() -> str:
-    return time.strftime("%Y%m%d%H%M%S")
+    return time.strftime("%%Y%%m%%d%%H%%M%%S")
 
 def processar_match() -> None:
     """Realiza o batimento entre ``detraf`` e ``cdr`` já importados."""
