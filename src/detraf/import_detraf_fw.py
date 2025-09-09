@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Tuple
 import time
 import yaml
+import re
 
 # ----------------------------------------------------------------------
 # Utilitários de log
@@ -87,7 +88,8 @@ def _clean(s: str) -> str:
     return (s or "").strip()
 
 def _clean_num(s: str) -> str:
-    return _clean(s)
+    """Remove caracteres não numéricos de ``s`` e faz strip."""
+    return re.sub(r"[^0-9]", "", _clean(s))
 
 def _is_valid_date8(s: str) -> bool:
     s = s or ""
@@ -175,13 +177,13 @@ def importar_fixowidth_para_detraf(caminho: str, layout_path: str, periodo: str 
             except Exception:
                 sequencial = None
 
-            assinante_a_numero = _clean(rec.get("assinante_a", ""))
+            assinante_a_numero = _clean_num(rec.get("assinante_a", ""))
             eot_de_a = _clean(rec.get("eot_de_a", ""))
             cnl_de_a = _clean(rec.get("cnl_de_a", ""))
             area_local_de_a = _clean(rec.get("area_local_de_a", ""))
             data_da_chamada = _clean(rec.get("data_da_chamada", ""))
             hora_de_atendimento = _clean(rec.get("hora_de_atendimento", ""))
-            assinante_b_numero = _clean(rec.get("assinante_b", ""))
+            assinante_b_numero = _clean_num(rec.get("assinante_b", ""))
             eot_de_b = _clean(rec.get("eot_de_b", ""))
             cnl_de_b = _clean(rec.get("cnl_de_b", ""))
             area_local_de_b = _clean(rec.get("area_local_de_b", ""))

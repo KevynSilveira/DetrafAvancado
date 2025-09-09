@@ -7,7 +7,7 @@ from .log import info, ok, warn
 from .normalizer import criar_tmp_cdr, criar_tmp_detraf
 
 def _run_id() -> str:
-    return time.strftime("%Y%m%d%H%M%S")
+    return time.strftime("%%Y%%m%%d%%H%%M%%S")
 
 def processar_match() -> None:
     """Realiza o batimento entre ``detraf`` e ``cdr`` já importados."""
@@ -98,8 +98,8 @@ def processar_match() -> None:
             SELECT dc.id,
                    dc.status,
                    d.data_hora AS detraf_data_hora,
-                   d.assinante_a_numero AS assinante_a,
-                   d.assinante_b_numero AS assinante_b,
+                   REGEXP_REPLACE(d.assinante_a_numero, '[^0-9]', '') AS assinante_a,
+                   REGEXP_REPLACE(d.assinante_b_numero, '[^0-9]', '') AS assinante_b,
                    c.calldate AS cdr_data_hora,
                    d.eot_de_a AS detraf_eot_a,
                    d.eot_de_b AS detraf_eot_b,
