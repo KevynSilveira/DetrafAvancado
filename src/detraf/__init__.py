@@ -1,9 +1,15 @@
 """Pacote principal do analisador DETRAF."""
 
-# Evitamos importações pesadas aqui para reduzir efeitos colaterais durante
-# ``import detraf``. Os submódulos podem ser acessados diretamente via
-# ``import detraf.<modulo>`` quando necessário.
+from . import import_detraf, match_cdr, normalizer, processing, main, schema
 
-__all__ = ["__version__"]
+__all__ = [
+    "__version__",
+    "import_detraf",
+    "match_cdr",
+    "normalizer",
+    "processing",
+    "main",
+    "schema",
+]
 
 __version__ = "2.0.0"
