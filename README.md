@@ -8,28 +8,28 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
 ```
 
-## Configuração do Banco (automática)
+## Configuração do Banco
 ```bash
-detraf setup-db
-# Será perguntado host, porta, usuário, senha e database.
-# Um arquivo .env será criado e a conexão testada.
+# configura o banco (host, porta, user, senha, database)
+detraf db-config
+
+# valida a conexão (SELECT 1)
+detraf db-check
 ```
 
-## Diagnóstico rápido do Banco
+## Configuração do Processo (período/EOT/arquivo)
 ```bash
-detraf diag-db
+# grava período (YYYYMM), EOT (3 dígitos) e caminho do arquivo DETRAF
+detraf config
 ```
 
-## Execução da Análise (primeira etapa)
+## Execução da Análise
 ```bash
+# usa as variáveis já salvas (período/EOT/arquivo)
 detraf run
-# O comando pedirá:
-# - Período de referência no formato YYYYMM (ex.: 202505)
-# - EOT da análise (ex.: 010)
-# - Caminho do arquivo DETRAF (ex.: data/Detraf.txt)
-#
-# Em seguida, será validada a conexão com o banco,
-# impressas as variáveis inseridas e iniciado o processamento.
+
+# ou peça para coletar/atualizar as variáveis durante a execução:
+detraf run --config
 ```
 
 > **Nota:** Esta versão foca na **etapa inicial** (setup do banco + inicializador de dados). A importação do arquivo e etapas seguintes estão estruturadas para evolução rápida.
