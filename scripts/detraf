@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Executa o DETRAF com zero-dependências de sistema:
+# - Se existir vendor/, usa-o (sem instalar nada)
+# - Senão, cria .venv e instala o pacote local
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PYTHON_BIN="${PYTHON:-python3}"
+VENDOR_DIR="$ROOT_DIR/vendor"
+VENV_DIR="$ROOT_DIR/.venv"
+
+if [ -d "$VENDOR_DIR" ]; then
+  export PYTHONPATH="$ROOT_DIR/src:$VENDOR_DIR${PYTHONPATH:+:$PYTHONPATH}"
+  exec "$PYTHON_BIN" -m detraf "$@"
+fi
+
+if [ ! -x "$VENV_DIR/bin/python" ]; then
+  "$PYTHON_BIN" -m venv "$VENV_DIR"
+fi
+
+"$VENV_DIR/bin/python" -m pip install --upgrade pip setuptools wheel >/dev/null
+"$VENV_DIR/bin/python" -m pip install . >/dev/null
+
+exec "$VENV_DIR/bin/detraf" "$@"
+

@@ -25,12 +25,38 @@ detraf config
 
 ## Execução da Análise
 ```bash
-# usa as variáveis já salvas (período/EOT/arquivo)
+# forma 1 (sem instalar nada):
+./scripts/detraf run
+
+# forma 2 (instalado no venv/ambiente):
 detraf run
 
 # ou peça para coletar/atualizar as variáveis durante a execução:
 detraf run --config
 ```
+
+## Replicação sem instalação (GitHub)
+Para deixar o repositório totalmente portátil (sem pip no destino):
+
+1) Gere a pasta `vendor/` com as dependências (apenas uma vez, em uma máquina com internet):
+```bash
+./scripts/build_vendor.sh
+```
+2) Confirme que `vendor/` foi criada e contém os pacotes (pymysql, typer, rich, pyyaml, dotenv).
+
+3) Commite e envie ao GitHub (o `.gitignore` já evita logs e `configs/.env`):
+```bash
+git add -A
+git commit -m "build: vendor libs e scripts de execução"
+git push origin main  # ajuste o branch conforme seu fluxo
+```
+
+4) No servidor, apenas clone o repositório e rode:
+```bash
+./scripts/detraf config   # configura período/EOT/arquivo e banco
+./scripts/detraf run
+```
+O launcher detecta `vendor/` e executa com `python -m detraf` sem instalar nada no sistema.
 
 > **Nota:** Esta versão foca na **etapa inicial** (setup do banco + inicializador de dados). A importação do arquivo e etapas seguintes estão estruturadas para evolução rápida.
 
