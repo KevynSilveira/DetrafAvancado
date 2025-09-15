@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import datetime
-from .env import CONFIGS_DIR
-LAYOUT_DEFAULT = str((CONFIGS_DIR / "detraf_layout.yaml").resolve())
+
+LAYOUT_DEFAULT = "configs/detraf_layout.yaml"
 
 def _ts() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -25,8 +25,7 @@ def _count_lines(p: Path) -> int:
 
 def importar_arquivo_txt(caminho: str, periodo: str, eot: str, layout_path: str = LAYOUT_DEFAULT) -> dict:
     """
-    Importa o arquivo DETRAF (layout fixo) para a tabela
-    detraf_arquivo_batimento_avancado via rotina fixowidth.
+    Importa o arquivo DETRAF (layout fixo) para a tabela detraf via rotina fixowidth.
     Retorna um resumo no formato:
       {
         "total": int,
@@ -45,6 +44,7 @@ def importar_arquivo_txt(caminho: str, periodo: str, eot: str, layout_path: str 
         raise FileNotFoundError(f"Layout não encontrado: {layout_path}")
 
     total = _count_lines(p)
+    _ok(f"Arquivo encontrado: {p.name} | {total} linhas detectadas")
 
     # Importer oficial (fixowidth)
     from .import_detraf_fw import importar_fixowidth_para_detraf
@@ -77,4 +77,5 @@ def importar_arquivo_txt(caminho: str, periodo: str, eot: str, layout_path: str 
     )
     resumo["ignorados_inconsistentes"] = int(ignorados)
 
+    _ok(f"Arquivo importado e persistido ({resumo['inseridos']} linhas).")
     return resumo

@@ -58,20 +58,21 @@ def _truncate_if_exists(conn, table_name: str) -> None:
 
 def _schema_summary(conn) -> None:
     """
-    Verifica existência das tabelas do batimento avançado sem alterar estrutura.
+    Apenas confirma existência das tabelas sem tentar criar/alterar.
+    Fazemos isso para não colidir com o importador, que já assume estrutura específica.
     """
     with conn.cursor() as cur:
-        has_arq = _table_exists(cur, "detraf_arquivo_batimento_avancado")
-        has_proc = _table_exists(cur, "detraf_processado_batimento_avancado")
+        has_detraf = _table_exists(cur, "detraf")
+        has_conf = _table_exists(cur, "detraf_conferencia")
 
-    if has_arq and has_proc:
-        ok("Schema verificado (tabelas avançadas presentes).")
-    elif has_arq and not has_proc:
-        warn("Tabela detraf_processado_batimento_avancado não encontrada.")
-    elif not has_arq and has_proc:
-        warn("Tabela detraf_arquivo_batimento_avancado não encontrada.")
+    if has_detraf and has_conf:
+        ok("Schema verificado (detraf, detraf_conferencia).")
+    elif has_detraf and not has_conf:
+        warn("Tabela detraf_conferencia não encontrada.")
+    elif not has_detraf and has_conf:
+        warn("Tabela detraf não encontrada.")
     else:
-        warn("Tabelas avançadas não encontradas (arquivo/processado).")
+        warn("Tabelas detraf e detraf_conferencia não encontradas.")
 
 # === Pipeline: preparação ===
 def begin_processing(periodo: str, eot: str, arquivo: str) -> Tuple[str, str]:
@@ -123,11 +124,11 @@ def begin_processing(periodo: str, eot: str, arquivo: str) -> Tuple[str, str]:
     except Exception as ex:
         warn(f"Não foi possível verificar o schema: {ex}")
 
-    # 3) limpeza solicitada (truncate) — só se existirem (não toca cdr/numeros_portados/cadup)
+    # 3) limpeza solicitada (truncate) — só se existirem
     try:
-        _truncate_if_exists(conn, "detraf_arquivo_batimento_avancado")
-        _truncate_if_exists(conn, "detraf_processado_batimento_avancado")
-        ok("Preparação concluída (tabelas avançadas limpas). Próxima etapa: importação do DETRAF (layout fixo).")
+        _truncate_if_exists(conn, "detraf")
+        _truncate_if_exists(conn, "detraf_conferencia")
+        ok("Preparação concluída. Próxima etapa: importação do DETRAF (layout fixo).")
     finally:
         conn.close()
 

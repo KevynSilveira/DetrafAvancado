@@ -102,16 +102,27 @@ def _is_valid_time6(s: str) -> bool:
 # ----------------------------------------------------------------------
 # Progresso
 # ----------------------------------------------------------------------
-def _progress(curr: int, total: int, started_at: float, every: int = 0) -> None:
-    """Log de progresso silencioso (simplificado). Mantido para compatibilidade."""
-    return
+def _progress(curr: int, total: int, started_at: float, every: int = 1000) -> None:
+    if curr == 0:
+        return
+    if (curr % every) != 0 and curr != total:
+        return
+    elapsed = max(1e-6, time.perf_counter() - started_at)
+    rate = curr / elapsed
+    remain = max(0.0, (total - curr) / rate) if rate > 0 else 0.0
+    width = 40
+    filled = int(width * curr / total) if total > 0 else width
+    bar = "█" * filled + " " * (width - filled)
+    print(f"\rImportando [{bar}] {curr}/{total} lin | {rate:,.1f} lin/s | ETA {remain:,.1f}s", end="")
+    if curr == total:
+        print("")  # quebra linha final
 
 # ----------------------------------------------------------------------
 # INSERT SQL (colunas compatíveis com o schema do projeto)
 #  - Usa STR_TO_DATE com %% para escapar o % do Python/PyMySQL
 # ----------------------------------------------------------------------
 _SQL_INSERT = """
-INSERT INTO detraf_arquivo_batimento_avancado (
+INSERT INTO detraf (
     eot, sequencial, assinante_a_numero, eot_de_a, cnl_de_a, area_local_de_a,
     data_da_chamada, hora_de_atendimento,
     assinante_b_numero, eot_de_b, cnl_de_b, area_local_de_b,
@@ -129,8 +140,7 @@ INSERT INTO detraf_arquivo_batimento_avancado (
 # ----------------------------------------------------------------------
 def importar_fixowidth_para_detraf(caminho: str, layout_path: str, periodo: str | None = None, eot: str | None = None) -> Dict[str, Any]:
     """
-    Importa arquivo texto de layout fixo para a tabela
-    'detraf_arquivo_batimento_avancado'.
+    Importa arquivo texto de layout fixo para tabela 'detraf'.
     - caminho: arquivo DETRAF
     - layout_path: YAML com o layout
     - periodo: 'YYYYMM' para filtro (opcional, recomendado)
@@ -178,9 +188,12 @@ def importar_fixowidth_para_detraf(caminho: str, layout_path: str, periodo: str 
             cnl_de_b = _clean(rec.get("cnl_de_b", ""))
             area_local_de_b = _clean(rec.get("area_local_de_b", ""))
 
-            # Não filtra por período: todas as linhas são importadas.
-            # A classificação "Recuperação de conta" é feita na etapa de matching
-            # com base no mês de referência salvo em contexto.
+            # Filtro por periodo YYYYMM (data da chamada)
+            if periodo:
+                if not _is_valid_date8(data_da_chamada) or data_da_chamada[:6] != periodo:
+                    ignorados += 1
+                    _progress(lidas, total, t0)  # progresso por linha
+                    continue
 
             # Sanitização de data/hora: STR_TO_DATE lida com NULL/strings inválidas
             data_str = data_da_chamada if _is_valid_date8(data_da_chamada) else None
