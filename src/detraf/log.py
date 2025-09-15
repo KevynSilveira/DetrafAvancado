@@ -15,6 +15,9 @@ header = section
 def info(msg: str) -> None:
     print(f"{_ts()} {msg}")
 
+def debug(msg: str) -> None:
+    print(f"{_ts()} DEBUG {msg}")
+
 def ok(msg: str) -> None:
     print(f"{_ts()} OK {msg}")
 

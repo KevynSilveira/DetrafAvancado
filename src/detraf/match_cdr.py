@@ -6,7 +6,7 @@ from datetime import datetime as _dt
 import pymysql
 from .db import get_conn_params
 from .env import load_env
-from .log import info, ok, warn
+from .log import debug, info, ok, warn
 from .normalizer import criar_tmp_cdr, criar_tmp_detraf
 from .normalizer import _resolve_eot  # usa validação em numeros_portados/cadup
 from .normalizer import _lookup_eot_cadup  # busca direta em CADUP para perdidos
@@ -105,22 +105,136 @@ def processar_match() -> None:
 
         # Inserções (somente para pares com match RN=1), calculando EOT de referência sob demanda
         cur.execute(f"SELECT detraf_id, cdr_id, diff_sec, detraf_dt, eot_de_a, eot_de_b, cdr_eot_a, cdr_eot_b, cdr_src, cdr_dst, disposition, calldate FROM {tmp_conf}")
-        rows = cur.fetchall()
+        rows_raw = cur.fetchall() or []
+
+        def _normalize_conf_row(row):
+            if isinstance(row, dict):
+                return {
+                    'detraf_id': row.get('detraf_id'),
+                    'cdr_id': row.get('cdr_id'),
+                    'diff_sec': row.get('diff_sec'),
+                    'detraf_dt': row.get('detraf_dt'),
+                    'eot_de_a': row.get('eot_de_a'),
+                    'eot_de_b': row.get('eot_de_b'),
+                    'cdr_eot_a': row.get('cdr_eot_a'),
+                    'cdr_eot_b': row.get('cdr_eot_b'),
+                    'cdr_src': row.get('cdr_src'),
+                    'cdr_dst': row.get('cdr_dst'),
+                    'disposition': row.get('disposition'),
+                    'calldate': row.get('calldate'),
+                }
+            return {
+                'detraf_id': row[0],
+                'cdr_id': row[1],
+                'diff_sec': row[2],
+                'detraf_dt': row[3],
+                'eot_de_a': row[4],
+                'eot_de_b': row[5],
+                'cdr_eot_a': row[6],
+                'cdr_eot_b': row[7],
+                'cdr_src': row[8],
+                'cdr_dst': row[9],
+                'disposition': row[10],
+                'calldate': row[11],
+            }
+
+        rows = [_normalize_conf_row(r) for r in rows_raw]
+
+        def _normalize_key(value):
+            if value is None:
+                return None
+            try:
+                return str(int(value))
+            except Exception:
+                return str(value)
+
+        selected_map = {}
+        for record in rows:
+            key = _normalize_key(record.get('detraf_id'))
+            if key is not None and key not in selected_map:
+                selected_map[key] = record
+
+        try:
+            cur.execute(
+                f"""
+                SELECT d.id AS detraf_id,
+                       d.a_num,
+                       d.b_num,
+                       d.eot_de_a,
+                       d.eot_de_b,
+                       COUNT(c.id) AS cand_count
+                FROM {tmp_detraf} d
+                LEFT JOIN {tmp_cdr} c
+                  ON d.a_num = c.src
+                 AND d.b_num = c.dst
+                 AND ABS(TIMESTAMPDIFF(MINUTE, d.data_hora, c.calldate)) <= 5
+                GROUP BY d.id, d.a_num, d.b_num, d.eot_de_a, d.eot_de_b
+                HAVING COUNT(c.id) = 0 OR COUNT(c.id) > 1
+                """
+            )
+            diag_rows_raw = cur.fetchall() or []
+        except Exception:
+            diag_rows_raw = []
+
+        for row in diag_rows_raw:
+            if isinstance(row, dict):
+                detraf_id = row.get('detraf_id')
+                a_num = row.get('a_num')
+                b_num = row.get('b_num')
+                eot_a = row.get('eot_de_a')
+                eot_b = row.get('eot_de_b')
+                cand_count = row.get('cand_count')
+            else:
+                detraf_id, a_num, b_num, eot_a, eot_b, cand_count = row
+            key = _normalize_key(detraf_id)
+            selected = selected_map.get(key) if key is not None else None
+            sel_calldate = selected.get('calldate') if selected else None
+            sel_diff = selected.get('diff_sec') if selected else None
+            sel_eot_a = selected.get('cdr_eot_a') if selected else None
+            sel_eot_b = selected.get('cdr_eot_b') if selected else None
+            sel_cdr_id = selected.get('cdr_id') if selected else None
+            try:
+                cand_count_int = int(cand_count) if cand_count is not None else cand_count
+            except Exception:
+                cand_count_int = cand_count
+            if cand_count_int == 0:
+                motivo = 'nenhum candidato'
+            else:
+                motivo = f"mais de um candidato (total={cand_count_int})"
+                if sel_cdr_id is not None:
+                    motivo += f" -> RN=1 selecionado {sel_cdr_id}"
+            debug(
+                "detraf_id=%s a_num=%s b_num=%s calldate=%s diff_sec=%s "
+                "eot_detraf=(%s,%s) eot_cdr=(%s,%s) -> %s"
+                % (
+                    detraf_id,
+                    a_num,
+                    b_num,
+                    sel_calldate,
+                    sel_diff,
+                    eot_a,
+                    eot_b,
+                    sel_eot_a,
+                    sel_eot_b,
+                    motivo,
+                )
+            )
+
         ins = []
         outdated_seen = set()
         outdated = []  # {'numero','eot_cdr','eot_correto','data_janela'}
         for r in rows:
-            # acesso por chave ou índice
-            get = (lambda k: r[k]) if isinstance(r, dict) else (lambda k: r[{
-                'detraf_id':0,'cdr_id':1,'diff_sec':2,'detraf_dt':3,'eot_de_a':4,'eot_de_b':5,'cdr_eot_a':6,'cdr_eot_b':7,'cdr_src':8,'cdr_dst':9,'disposition':10,'calldate':11
-            }[k]])
-            detraf_id = get('detraf_id'); cdr_id = get('cdr_id')
-            detraf_dt = get('detraf_dt'); disp = get('disposition')
-            eot_bat_a = get('eot_de_a'); eot_bat_b = get('eot_de_b')
-            cdr_src = str(get('cdr_src')); cdr_dst = str(get('cdr_dst'))
-            cdr_eot_a = (str(get('cdr_eot_a')) if get('cdr_eot_a') is not None else None)
-            cdr_eot_b = (str(get('cdr_eot_b')) if get('cdr_eot_b') is not None else None)
-            calldate = get('calldate')
+            detraf_id = r.get('detraf_id'); cdr_id = r.get('cdr_id')
+            detraf_dt = r.get('detraf_dt'); disp = r.get('disposition')
+            diff_sec = r.get('diff_sec')
+            eot_bat_a = r.get('eot_de_a'); eot_bat_b = r.get('eot_de_b')
+            cdr_src = str(r.get('cdr_src'))
+            cdr_dst = str(r.get('cdr_dst'))
+            raw_cdr_eot_a = r.get('cdr_eot_a')
+            raw_cdr_eot_b = r.get('cdr_eot_b')
+            cdr_eot_a = (str(raw_cdr_eot_a) if raw_cdr_eot_a is not None else None)
+            cdr_eot_b = (str(raw_cdr_eot_b) if raw_cdr_eot_b is not None else None)
+            calldate = r.get('calldate')
 
             # Resolve EOT de referência sob demanda
             eot_ref_a, origem_a, port_a = _resolve_eot(cur, cdr_src, calldate)
@@ -274,6 +388,26 @@ def processar_match() -> None:
                     pass
 
             observacao = ' | '.join([p for p in obs_parts if p]) or None
+            debug(
+                "[detraf_id=%s cdr_id=%s] decision: disposition=%s answered=%s eot_ok=%s "
+                "eot_ref=(%s,%s) eot_bat=(%s,%s) eot_cdr=(%s,%s) diff_sec=%s status=%s observacao=%s"
+                % (
+                    detraf_id,
+                    cdr_id,
+                    disp,
+                    answered,
+                    eot_ok,
+                    eot_ref_a,
+                    eot_ref_b,
+                    eot_bat_a,
+                    eot_bat_b,
+                    cdr_eot_a,
+                    cdr_eot_b,
+                    diff_sec,
+                    status,
+                    observacao,
+                )
+            )
             ins.append((detraf_id, cdr_id, status, observacao))
 
         if ins:
