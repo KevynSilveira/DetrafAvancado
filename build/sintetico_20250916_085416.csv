@@ -1,9 +1,0 @@
-Conferência,1577
-Perdidos,9882
-Recuperação de Contas,178
-Erros Total,63
-Erro 01 - Cobranca indevida - chamada com disposition diferente de atendida.,63
-Erro 02 - EOT de B do batimento diferente do EOT de B do CDR.,0
-Erro 03 - EOT de A do batimento diferente do EOT de A do CDR.,0
-Erro 04 - Chamada do batimento nao encontrado no CDR.,0
-Erro 05 - EOT de A e de B do batimento nao bate com o CDR.,0

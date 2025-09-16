@@ -346,8 +346,8 @@ def processar_match() -> None:
 
         conn.commit()
 
-        cur.execute(f"DROP TEMPORARY TABLE IF EXISTS {tmp_conf}")
-        cur.execute(f"DROP TEMPORARY TABLE IF EXISTS {tmp_detraf}")
+        # cur.execute(f"DROP TEMPORARY TABLE IF EXISTS {tmp_conf}")
+        # cur.execute(f"DROP TEMPORARY TABLE IF EXISTS {tmp_detraf}")
         ok("Temporárias descartadas.")
 
         # View final (escapa % no literal)

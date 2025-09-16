@@ -5,3 +5,10 @@ __pycache__/
 .venv/
 logs/
 configs/.env
+build/
+*.csv
+*.log
+*.egg-info/
+__pycache__/
+*.pyc
+.venv/
